@@ -17,6 +17,11 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
       // Handle any messages from the iframe
       if (event.data.type === 'FOLDERS_READY') {
         setIsLoaded(true);
+      } else if (event.data.type === 'EMAIL_MOVED') {
+        // Forward this message to the parent window to update the email list
+        window.dispatchEvent(new MessageEvent('message', {
+          data: event.data
+        }));
       }
     };
     
@@ -27,6 +32,7 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(true);
+    e.dataTransfer.dropEffect = 'move';
     
     // Send message to iframe
     if (iframeRef.current && iframeRef.current.contentWindow) {
@@ -48,17 +54,28 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
     setDragOver(false);
     
     try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      // Try both formats for cross-origin compatibility
+      let data;
+      try {
+        data = JSON.parse(e.dataTransfer.getData('application/json'));
+      } catch (error) {
+        try {
+          data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        } catch (innerError) {
+          console.error('Error parsing drag data:', innerError);
+          return;
+        }
+      }
       
       // Send the dropped email data to the iframe
-      if (iframeRef.current && iframeRef.current.contentWindow) {
+      if (iframeRef.current && iframeRef.current.contentWindow && data) {
         iframeRef.current.contentWindow.postMessage({
           type: 'EMAIL_DROPPED',
           payload: data
         }, '*');
       }
     } catch (error) {
-      console.error('Error parsing drag data:', error);
+      console.error('Error handling drop:', error);
     }
   };
   
