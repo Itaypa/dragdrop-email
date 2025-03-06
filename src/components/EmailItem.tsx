@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
 import { Mail } from "lucide-react";
 
@@ -22,58 +22,49 @@ const EmailItem: React.FC<EmailItemProps> = ({
   onDragStart
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const emailRef = useRef<HTMLDivElement>(null);
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true);
     
-    // Create a custom ghost image
-    const ghost = document.createElement('div');
-    ghost.classList.add('bg-white', 'p-4', 'rounded-md', 'shadow-elevated', 'text-sm', 'max-w-md');
-    ghost.innerText = subject;
-    ghost.style.position = 'absolute';
-    ghost.style.top = '-1000px';
-    document.body.appendChild(ghost);
-    
-    e.dataTransfer.setDragImage(ghost, 10, 10);
-    
-    // Set data in BOTH formats to support cross-origin drag and drop
-    const data = JSON.stringify({ id, subject, sender });
-    e.dataTransfer.setData('text/plain', data);
-    e.dataTransfer.setData('application/json', data);
+    // Set data for drag operation
+    const data = { id, subject, sender };
+    e.dataTransfer.setData('text/plain', JSON.stringify(data));
     e.dataTransfer.effectAllowed = 'move';
     
-    if (emailRef.current) {
-      emailRef.current.classList.add('dragging');
-    }
+    // Create ghost image
+    const ghostElement = document.createElement('div');
+    ghostElement.classList.add('fixed', 'top-0', 'left-0', '-translate-x-full');
+    ghostElement.innerHTML = `
+      <div class="bg-white p-4 rounded-lg shadow-lg border border-primary w-64">
+        <p class="font-medium text-sm truncate">${subject}</p>
+        <p class="text-xs text-muted-foreground truncate">${sender}</p>
+      </div>
+    `;
+    document.body.appendChild(ghostElement);
+    e.dataTransfer.setDragImage(ghostElement, 10, 10);
     
-    // Notify parent component
+    // Clean up ghost element
+    requestAnimationFrame(() => {
+      document.body.removeChild(ghostElement);
+    });
+    
     onDragStart(id);
-    
-    // Clean up the ghost element after dragging
-    setTimeout(() => {
-      document.body.removeChild(ghost);
-    }, 0);
   };
 
   const handleDragEnd = () => {
     setIsDragging(false);
-    if (emailRef.current) {
-      emailRef.current.classList.remove('dragging');
-    }
   };
   
   return (
     <div
-      ref={emailRef}
       draggable="true"
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       className={cn(
-        "p-4 mb-2 rounded-lg transition-all duration-250 border border-border draggable-email hover-lift group",
-        "backdrop-blur-[2px] bg-white bg-opacity-90",
-        isDragging ? "dragging opacity-50 scale-105 shadow-elevated" : "",
-        read ? "bg-opacity-75" : "shadow-subtle border-l-4 border-l-primary"
+        "p-4 rounded-lg transition-all duration-250 border border-border hover:border-primary",
+        "backdrop-blur-[2px] bg-white bg-opacity-90 cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50 scale-105 shadow-lg border-primary",
+        read ? "bg-opacity-75" : "border-l-4 border-l-primary"
       )}
     >
       <div className="flex items-center justify-between">

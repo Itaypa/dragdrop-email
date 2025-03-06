@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from "@/lib/utils";
 
@@ -11,17 +10,10 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   
-  // Handle messaging between parent and iframe
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Handle any messages from the iframe
       if (event.data.type === 'FOLDERS_READY') {
         setIsLoaded(true);
-      } else if (event.data.type === 'EMAIL_MOVED') {
-        // Forward this message to the parent window to update the email list
-        window.dispatchEvent(new MessageEvent('message', {
-          data: event.data
-        }));
       }
     };
     
@@ -34,18 +26,20 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
     setDragOver(true);
     e.dataTransfer.dropEffect = 'move';
     
-    // Send message to iframe
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.postMessage({ type: 'DRAG_OVER' }, '*');
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({
+        type: 'DRAG_OVER'
+      }, '*');
     }
   };
   
   const handleDragLeave = () => {
     setDragOver(false);
     
-    // Send message to iframe
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.postMessage({ type: 'DRAG_LEAVE' }, '*');
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({
+        type: 'DRAG_LEAVE'
+      }, '*');
     }
   };
   
@@ -54,21 +48,9 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
     setDragOver(false);
     
     try {
-      // Try both formats for cross-origin compatibility
-      let data;
-      try {
-        data = JSON.parse(e.dataTransfer.getData('application/json'));
-      } catch (error) {
-        try {
-          data = JSON.parse(e.dataTransfer.getData('text/plain'));
-        } catch (innerError) {
-          console.error('Error parsing drag data:', innerError);
-          return;
-        }
-      }
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
       
-      // Send the dropped email data to the iframe
-      if (iframeRef.current && iframeRef.current.contentWindow && data) {
+      if (iframeRef.current?.contentWindow && data) {
         iframeRef.current.contentWindow.postMessage({
           type: 'EMAIL_DROPPED',
           payload: data
@@ -83,7 +65,7 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
     <div 
       className={cn(
         "w-full h-full transition-all duration-300 flex flex-col",
-        dragOver ? "scale-[1.01]" : "",
+        dragOver && "scale-[1.01]",
         className
       )}
       onDragOver={handleDragOver}
@@ -106,7 +88,6 @@ const FolderFrame: React.FC<FolderFrameProps> = ({ className }) => {
           className="w-full h-full rounded-md"
           title="Email Folders"
           onLoad={() => {
-            // When iframe loads, check if we can communicate
             if (iframeRef.current && iframeRef.current.contentWindow) {
               iframeRef.current.contentWindow.postMessage({ type: 'HELLO_FROM_PARENT' }, '*');
             }

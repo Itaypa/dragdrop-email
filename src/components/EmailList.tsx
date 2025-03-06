@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import EmailItem from './EmailItem';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
 
 interface Email {
   id: string;
@@ -79,31 +79,31 @@ interface EmailListProps {
 
 const EmailList: React.FC<EmailListProps> = ({ onDragStart, className }) => {
   const [emails, setEmails] = useState<Email[]>(mockEmails);
-  const [activeEmailId, setActiveEmailId] = useState<string | null>(null);
-  
-  // Listen for messages from the iframe
+  const { toast } = useToast();
+
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from our iframe
-      if (event.data && event.data.type === 'EMAIL_MOVED') {
-        // Remove the email from the list
-        removeEmail(event.data.payload.emailId);
+    const handleEmailMoved = (event: MessageEvent) => {
+      if (event.data.type === 'EMAIL_MOVED' && event.data.payload?.emailId) {
+        const { emailId, folder } = event.data.payload;
+        setEmails(prevEmails => prevEmails.filter(email => email.id !== emailId));
+        toast({
+          title: "Email moved",
+          description: `Email moved to ${folder}`,
+        });
       }
     };
-    
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-  
+
+    window.addEventListener('message', handleEmailMoved);
+    return () => window.removeEventListener('message', handleEmailMoved);
+  }, [toast]);
+
   const handleDragStart = (id: string) => {
-    setActiveEmailId(id);
-    onDragStart(id);
+    const email = emails.find(email => email.id === id);
+    if (email) {
+      onDragStart(id);
+    }
   };
-  
-  const removeEmail = (id: string) => {
-    setEmails(emails.filter(email => email.id !== id));
-  };
-  
+
   return (
     <div className={cn("p-4", className)}>
       <div className="mb-6">
@@ -122,7 +122,7 @@ const EmailList: React.FC<EmailListProps> = ({ onDragStart, className }) => {
         />
       </div>
       
-      <div className="overflow-y-auto max-h-[calc(100vh-180px)] pr-2 -mr-2">
+      <div className="overflow-y-auto max-h-[calc(100vh-180px)] pr-2 -mr-2 space-y-2">
         {emails.map(email => (
           <EmailItem
             key={email.id}
