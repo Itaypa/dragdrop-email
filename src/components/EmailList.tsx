@@ -18,7 +18,7 @@ const mockEmails: Email[] = [
     id: '1',
     subject: 'Project Update: Q3 Goals',
     sender: 'Sarah Johnson <sarah.j@company.com>',
-    excerpt: 'I wanted to share our progress on the Q3 goals. We've achieved 80% of our targets and...',
+    excerpt: 'I wanted to share our progress on the Q3 goals. We\'ve achieved 80% of our targets and...',
     date: '10:30 AM',
     read: false
   },
@@ -34,7 +34,7 @@ const mockEmails: Email[] = [
     id: '3',
     subject: 'New Feature Request: Drag & Drop',
     sender: 'Product <product@company.com>',
-    excerpt: 'We've received multiple requests for implementing drag and drop functionality in our app...',
+    excerpt: 'We\'ve received multiple requests for implementing drag and drop functionality in our app...',
     date: 'Jul 10',
     read: false
   },
@@ -58,7 +58,7 @@ const mockEmails: Email[] = [
     id: '6',
     subject: 'Important: Security Update',
     sender: 'Security Team <security@company.com>',
-    excerpt: 'We've released an important security update for our service. Please take a moment to review...',
+    excerpt: 'We\'ve released an important security update for our service. Please take a moment to review...',
     date: 'Jul 5',
     read: false
   },
