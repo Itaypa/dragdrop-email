@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import EmailItem from './EmailItem';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
@@ -80,6 +80,20 @@ interface EmailListProps {
 const EmailList: React.FC<EmailListProps> = ({ onDragStart, className }) => {
   const [emails, setEmails] = useState<Email[]>(mockEmails);
   const [activeEmailId, setActiveEmailId] = useState<string | null>(null);
+  
+  // Listen for messages from the iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from our iframe
+      if (event.data && event.data.type === 'EMAIL_MOVED') {
+        // Remove the email from the list
+        removeEmail(event.data.payload.emailId);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
   
   const handleDragStart = (id: string) => {
     setActiveEmailId(id);

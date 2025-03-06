@@ -37,7 +37,12 @@ const EmailItem: React.FC<EmailItemProps> = ({
     document.body.appendChild(ghost);
     
     e.dataTransfer.setDragImage(ghost, 10, 10);
-    e.dataTransfer.setData('application/json', JSON.stringify({ id, subject, sender }));
+    
+    // Set both text/plain and application/json formats
+    // This is crucial for cross-origin drag and drop
+    const data = JSON.stringify({ id, subject, sender });
+    e.dataTransfer.setData('text/plain', data);
+    e.dataTransfer.setData('application/json', data);
     e.dataTransfer.effectAllowed = 'move';
     
     if (emailRef.current) {

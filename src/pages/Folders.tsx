@@ -32,6 +32,8 @@ const FolderItem: React.FC<FolderItemProps> = ({
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    // Allow drops from cross-origin
+    e.dataTransfer.dropEffect = 'move';
     setIsOver(true);
     if (onDragOver) onDragOver(e);
   };
@@ -117,9 +119,23 @@ const Folders = () => {
         const emailData = event.data.payload as EmailData;
         setLastDropped(emailData);
         
-        // Determine which folder it was dropped on (this would come from the actual drop event)
-        // For this demo, we'll just assume it's the first visible folder
+        // For this demo, we'll just assume it's the inbox folder
         showNotification('inbox', emailData);
+        
+        // Update folder count
+        setFolderCounts(prev => ({
+          ...prev,
+          inbox: prev.inbox + 1
+        }));
+        
+        // Notify parent window of the moved email
+        window.parent.postMessage({
+          type: 'EMAIL_MOVED',
+          payload: {
+            emailId: emailData.id,
+            folder: 'inbox'
+          }
+        }, '*');
       }
     };
     
@@ -129,8 +145,12 @@ const Folders = () => {
   
   const handleFolderDrop = (folderName: keyof typeof folderCounts, e: React.DragEvent) => {
     try {
-      // Try to get the email data
-      const jsonData = e.dataTransfer.getData('application/json');
+      // Try both data formats for cross-origin compatibility
+      let jsonData = e.dataTransfer.getData('application/json');
+      if (!jsonData) {
+        jsonData = e.dataTransfer.getData('text/plain');
+      }
+      
       if (jsonData) {
         const emailData = JSON.parse(jsonData) as EmailData;
         
